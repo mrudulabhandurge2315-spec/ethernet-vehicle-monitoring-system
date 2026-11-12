@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Validation and Testing Report</title>
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 40px;
+    line-height: 1.5;
+    color: #222;
+}
+h1, h2 {
+    color: #17365D;
+}
+h1 {
+    text-align: center;
+    margin-top: 100px;
+}
+.subtitle {
+    text-align: center;
+    font-size: 18px;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 18px 0;
+}
+th, td {
+    border: 1px solid #555;
+    padding: 8px;
+    text-align: left;
+}
+th {
+    background: #D9EAF7;
+}
+pre {
+    background: #F2F2F2;
+    padding: 12px;
+    white-space: pre-wrap;
+}
+</style>
+</head>
+<body>
+
+<h1>VALIDATION AND TESTING REPORT</h1>
+<p class="subtitle">Development of an Ethernet-Based Vehicle Monitoring System using Linux Socket Programming</p>
+<p class="subtitle">Ubuntu 22.04.5 LTS | GCC 11.4.0</p>
+
+<h2>1. Introduction</h2>
+<p>This report documents the testing and validation of a vehicle monitoring system developed using Linux socket programming in C. The system consists of a Vehicle ECU that generates vehicle parameters and a Dashboard ECU that receives and displays them.</p>
+
+<h2>2. Testing Environment</h2>
+<table>
+<tr><th>Parameter</th><th>Configuration</th></tr>
+<tr><td>Operating System</td><td>Ubuntu 22.04.5 LTS (WSL2)</td></tr>
+<tr><td>Programming Language</td><td>C</td></tr>
+<tr><td>Compiler</td><td>GCC 11.4.0</td></tr>
+<tr><td>Communication Interface</td><td>Linux IP sockets</td></tr>
+<tr><td>Network Interface</td><td>Loopback (lo)</td></tr>
+<tr><td>IP Address</td><td>127.0.0.1</td></tr>
+<tr><td>Port Number</td><td>5000</td></tr>
+<tr><td>Packet Analysis</td><td>Wireshark / TShark 3.6.2</td></tr>
+</table>
+
+<h2>3. Test Cases</h2>
+<table>
+<tr><th>Test ID</th><th>Test Description</th><th>Expected Result</th><th>Observed Result</th><th>Status</th></tr>
+<tr><td>TC01</td><td>Compile both ECU programs</td><td>Successful compilation without errors</td><td>Both programs compiled successfully</td><td>PASS</td></tr>
+<tr><td>TC02</td><td>UDP communication</td><td>Dashboard receives vehicle data</td><td>Vehicle parameters received successfully</td><td>PASS</td></tr>
+<tr><td>TC03</td><td>TCP communication</td><td>TCP connection established and data received</td><td>Connection established and data received</td><td>PASS</td></tr>
+<tr><td>TC04</td><td>60-second UDP transmission</td><td>Continuous transmission and reception</td><td>Data transferred during the test period</td><td>PASS</td></tr>
+<tr><td>TC05</td><td>60-second TCP transmission</td><td>Continuous transmission and reception</td><td>Data transferred during the test period</td><td>PASS</td></tr>
+<tr><td>TC06</td><td>TCP dashboard unavailable</td><td>Connection attempt should fail</td><td>Connection refused was reported</td><td>PASS</td></tr>
+<tr><td>TC07</td><td>Invalid IP address</td><td>Invalid address should be rejected</td><td>Address validation rejected the invalid IP</td><td>PASS</td></tr>
+<tr><td>TC08</td><td>Wireshark UDP analysis</td><td>UDP packets should be visible</td><td>UDP traffic to port 5000 was captured</td><td>PASS</td></tr>
+<tr><td>TC09</td><td>Wireshark TCP analysis</td><td>TCP handshake and data should be visible</td><td>Handshake, data and connection closure were captured</td><td>PASS</td></tr>
+</table>
+
+<h2>4. UDP Validation</h2>
+<p>The Vehicle ECU and Dashboard ECU were executed in UDP mode. The sender transmitted vehicle parameters using sendto(), and the receiver obtained them using recvfrom(). The Dashboard ECU displayed the received speed, engine RPM and steering angle.</p>
+<p>The UDP capture contained 11 frames. The UDP length field was 20 bytes, consisting of an 8-byte UDP header and a 12-byte vehicle data payload.</p>
+
+<h2>5. TCP Validation</h2>
+<p>The Vehicle ECU and Dashboard ECU were executed in TCP mode. The Dashboard ECU created a listening socket, accepted the connection, and received vehicle data. The sender transmitted data using send(), while the receiver used recv().</p>
+<p>The TCP capture contained 62 frames in total. It showed the three-way handshake, 28 data-bearing TCP segments, acknowledgement traffic and connection termination.</p>
+
+<h2>6. Error Handling Tests</h2>
+<p>When the TCP Dashboard ECU was not running, the Vehicle ECU reported a connection-refused error. When an invalid IP address was configured, inet_pton() rejected the address and the program reported invalid dashboard IP.</p>
+<p>When the TCP sender was stopped, the receiver detected that the connection had closed. This was expected behaviour.</p>
+
+<h2>7. TCP and UDP Comparison</h2>
+<table>
+<tr><th>Feature</th><th>TCP</th><th>UDP</th></tr>
+<tr><td>Connection</td><td>Connection-oriented</td><td>Connectionless</td></tr>
+<tr><td>Delivery</td><td>Reliable, ordered byte stream</td><td>No delivery guarantee</td></tr>
+<tr><td>Retransmission</td><td>Handled by TCP protocol</td><td>Not provided by UDP</td></tr>
+<tr><td>Overhead</td><td>Higher</td><td>Lower</td></tr>
+<tr><td>Application Use</td><td>Reliable data transfer</td><td>Low-overhead real-time updates</td></tr>
+</table>
+
+<h2>8. Test Limitations</h2>
+<ul>
+<li>Both ECUs were tested on the same Ubuntu WSL2 environment.</li>
+<li>Communication used the loopback interface (127.0.0.1), not a physical Ethernet cable or separate ECUs.</li>
+<li>The vehicle parameters were randomly generated for demonstration.</li>
+<li>The application sends a native C structure, so the data representation is dependent on system architecture and byte order.</li>
+</ul>
+
+<h2>9. Conclusion</h2>
+<p>The validation tests confirmed that both TCP and UDP socket communication modes work successfully in the tested environment. The Dashboard ECU received and displayed the generated vehicle parameters. Wireshark captures provided evidence of UDP transmission and TCP connection establishment, data transfer and termination.</p>
+
+<h2>10. Screenshot Evidence</h2>
+
+<p>The following combined screenshots provide visual evidence of
+the vehicle communication tests, error-handling tests and network
+packet analysis performed during project validation.</p>
+
+<h3>10.1 UDP Communication</h3>
+<figure>
+<img src="../screenshots/combined/udp_analysis.png"
+     alt="UDP communication test screenshots"
+     style="width:100%; height:auto;">
+<figcaption>Figure 1: Vehicle ECU and Dashboard ECU UDP communication.</figcaption>
+</figure>
+
+<h3>10.2 TCP Communication</h3>
+<figure>
+<img src="../screenshots/combined/tcp_analysis.png"
+     alt="TCP communication test screenshots"
+     style="width:100%; height:auto;">
+<figcaption>Figure 2: TCP connection establishment and vehicle data communication.</figcaption>
+</figure>
+
+<h3>10.3 Error Handling</h3>
+<figure>
+<img src="../screenshots/combined/error_analysis.png"
+     alt="Error handling test screenshots"
+     style="width:100%; height:auto;">
+<figcaption>Figure 3: Error handling and connection failure test evidence.</figcaption>
+</figure>
+
+<h3>10.4 Wireshark Packet Analysis</h3>
+<figure>
+<img src="../screenshots/combined/wireshark_analysis.png"
+     alt="Wireshark TCP and UDP packet analysis"
+     style="width:100%; height:auto;">
+<figcaption>Figure 4: Captured UDP and TCP traffic analysed using Wireshark.</figcaption>
+</figure>
+
+</body>
+</html>

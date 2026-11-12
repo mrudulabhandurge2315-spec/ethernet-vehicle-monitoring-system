@@ -1,0 +1,188 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Design Document - Ethernet Vehicle Monitoring System</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 45px; line-height: 1.5; color: #222; }
+h1 { text-align: center; color: #17365D; }
+h2 { color: #17365D; border-bottom: 1px solid #888; padding-bottom: 4px; }
+.subtitle { text-align: center; font-size: 18px; }
+table { border-collapse: collapse; width: 100%; margin: 15px 0; }
+th, td { border: 1px solid #777; padding: 8px; text-align: left; }
+th { background: #D9EAF7; }
+pre { background: #F1F1F1; padding: 12px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+
+<h1>DESIGN DOCUMENT</h1>
+<p class="subtitle"><b>Development of an Ethernet-Based Vehicle Monitoring System Using Linux Socket Programming</b></p>
+<p style="text-align:center;">Project Technical Documentation</p>
+
+<h2>1. Introduction</h2>
+<p>Modern vehicles contain multiple Electronic Control Units (ECUs) that exchange information to monitor vehicle operation. Communication between ECUs is important for sharing parameters such as vehicle speed, engine RPM and steering angle.</p>
+<p>This project demonstrates communication between two simulated ECUs using Linux socket programming in the C programming language. The Vehicle ECU generates simulated vehicle parameters and sends them to the Dashboard ECU using TCP or UDP over an IP network.</p>
+
+<h2>2. Problem Statement</h2>
+<p>To develop a Linux-based vehicle monitoring system using socket programming in which a simulated Vehicle ECU transmits vehicle parameters to a Dashboard ECU. The system must support TCP and UDP communication and allow their communication behaviour to be compared.</p>
+
+<h2>3. Objectives</h2>
+<ul>
+<li>Understand Linux socket programming.</li>
+<li>Implement client-server communication using TCP.</li>
+<li>Implement connectionless communication using UDP.</li>
+<li>Generate simulated vehicle parameters periodically.</li>
+<li>Receive and display vehicle data on a dashboard terminal.</li>
+<li>Capture and analyse network packets using Wireshark/TShark.</li>
+<li>Compare TCP and UDP communication.</li>
+</ul>
+
+<h2>4. System Architecture</h2>
+<pre>
++---------------------------+
+|       VEHICLE ECU         |
+|                           |
+| Generates simulated data  |
+| Speed                      |
+| Engine RPM                 |
+| Steering Angle             |
++-------------+-------------+
+              |
+              | TCP / UDP
+              | IP: 127.0.0.1
+              | Port: 5000
+              |
++-------------v-------------+
+|      DASHBOARD ECU        |
+|                           |
+| Receives vehicle data     |
+| Displays parameters       |
++---------------------------+
+</pre>
+<p>The Vehicle ECU acts as the sender/client. The Dashboard ECU acts as the receiver. For TCP, the Dashboard ECU listens for and accepts a connection. For UDP, it binds a socket and waits for datagrams.</p>
+
+<h2>5. Software Requirements</h2>
+<table>
+<tr><th>Component</th><th>Details</th></tr>
+<tr><td>Operating System</td><td>Ubuntu 22.04.5 LTS under WSL2</td></tr>
+<tr><td>Programming Language</td><td>C</td></tr>
+<tr><td>Compiler</td><td>GCC 11.4.0</td></tr>
+<tr><td>Build Tool</td><td>GNU Make 4.3</td></tr>
+<tr><td>Network Analysis</td><td>Wireshark / TShark 3.6.2</td></tr>
+<tr><td>Communication</td><td>Linux IPv4 sockets using TCP and UDP</td></tr>
+</table>
+
+<h2>6. Vehicle Data Structure</h2>
+<p>Both programs use the following C structure to represent the simulated vehicle information:</p>
+<pre>
+struct VehicleData
+{
+    int speed;
+    int engine_rpm;
+    float steering_angle;
+};
+</pre>
+<table>
+<tr><th>Parameter</th><th>Unit</th><th>Generation Range</th></tr>
+<tr><td>Vehicle Speed</td><td>km/h</td><td>0 to 120</td></tr>
+<tr><td>Engine RPM</td><td>RPM</td><td>800 to 5000</td></tr>
+<tr><td>Steering Angle</td><td>degrees</td><td>-45.0 to +45.0</td></tr>
+</table>
+<p>The structure occupies 12 bytes on the tested system. Both programs use the same structure definition and transmit its contents directly.</p>
+
+<h2>7. Vehicle ECU Implementation</h2>
+<p>The Vehicle ECU is implemented in <b>src/vehicle_ecu.c</b>. It accepts a command-line argument to select either TCP or UDP mode.</p>
+<ol>
+<li>Validates the selected communication mode.</li>
+<li>Creates an IPv4 socket using SOCK_STREAM for TCP or SOCK_DGRAM for UDP.</li>
+<li>Configures the Dashboard ECU address as 127.0.0.1 and port 5000.</li>
+<li>Establishes a connection when TCP mode is selected.</li>
+<li>Generates random vehicle parameters.</li>
+<li>Transmits the structure using send() for TCP or sendto() for UDP.</li>
+<li>Repeats transmission at one-second intervals.</li>
+</ol>
+
+<h2>8. Dashboard ECU Implementation</h2>
+<p>The Dashboard ECU is implemented in <b>src/dashboard_ecu.c</b>. It also accepts a command-line argument to select TCP or UDP mode.</p>
+<ol>
+<li>Creates the appropriate IPv4 socket.</li>
+<li>Binds the socket to port 5000.</li>
+<li>In TCP mode, listens for an incoming connection and accepts the Vehicle ECU client.</li>
+<li>In UDP mode, waits for incoming datagrams using recvfrom().</li>
+<li>Receives the vehicle data structure.</li>
+<li>Displays speed, engine RPM and steering angle in the terminal.</li>
+<li>Handles connection closure or reception errors.</li>
+</ol>
+
+<h2>9. TCP Communication Flow</h2>
+<pre>
+Dashboard ECU                 Vehicle ECU
+     |                             |
+     |---- socket() ---------------|
+     |---- bind()                  |
+     |---- listen()                |
+     |                             |---- socket()
+     |                             |---- connect()
+     |<--------- accept() ---------|
+     |                             |
+     |<--------- send() -----------|
+     |---------- recv() ---------->|
+     |                             |
+     |       Data exchange         |
+     |                             |
+     |<--------- FIN/close --------|
+</pre>
+<p>TCP is connection-oriented. It establishes a connection before application data is exchanged and provides reliable, ordered byte-stream delivery.</p>
+
+<h2>10. UDP Communication Flow</h2>
+<pre>
+Dashboard ECU                 Vehicle ECU
+     |                             |
+     |---- socket()                 |
+     |---- bind()                   |
+     |                             |---- socket()
+     |                             |
+     |<--------- sendto() ----------|
+     |---------- recvfrom() ------->|
+     |                             |
+     |       Datagram exchange     |
+</pre>
+<p>UDP is connectionless. It sends individual datagrams without establishing a connection. It does not guarantee delivery or provide application-level confirmation that the receiver received the data.</p>
+
+<h2>11. Network Configuration</h2>
+<table>
+<tr><th>Parameter</th><th>Configuration</th></tr>
+<tr><td>Address Family</td><td>AF_INET (IPv4)</td></tr>
+<tr><td>Dashboard IP</td><td>127.0.0.1</td></tr>
+<tr><td>Port</td><td>5000</td></tr>
+<tr><td>TCP Socket Type</td><td>SOCK_STREAM</td></tr>
+<tr><td>UDP Socket Type</td><td>SOCK_DGRAM</td></tr>
+<tr><td>Test Interface</td><td>Linux loopback interface (lo)</td></tr>
+</table>
+<p>The current implementation is tested on the local loopback interface. It demonstrates IP socket communication but has not been tested between separate physical ECUs or over an external Ethernet cable.</p>
+
+<h2>12. Build and Execution</h2>
+<p>Both programs are compiled from the project root using:</p>
+<pre>make -f src/Makefile</pre>
+<p>UDP mode:</p>
+<pre>
+Terminal 1: ./dashboard_ecu udp
+Terminal 2: ./vehicle_ecu udp
+</pre>
+<p>TCP mode:</p>
+<pre>
+Terminal 1: ./dashboard_ecu tcp
+Terminal 2: ./vehicle_ecu tcp
+</pre>
+
+<h2>13. Packet Analysis</h2>
+<p>Wireshark/TShark was used to capture and inspect traffic on the loopback interface. The UDP capture contains datagrams addressed to port 5000. The TCP capture shows connection establishment, data segments, acknowledgements and connection termination.</p>
+<p>The saved captures are <b>wireshark/udp_capture.pcapng</b> and <b>wireshark/tcp_capture.pcapng</b>.</p>
+
+<h2>14. Conclusion</h2>
+<p>The project demonstrates simulated vehicle monitoring through Linux socket programming. Both TCP and UDP modes successfully transfer vehicle speed, engine RPM and steering angle from the Vehicle ECU to the Dashboard ECU. Packet captures provide evidence of the communication behaviour of both protocols.</p>
+
+</body>
+</html>

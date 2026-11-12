@@ -1,0 +1,37 @@
+# Compiled programs and build output
+/build/
+/bin/
+*.o
+*.out
+
+# Editor and operating system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs and captures
+*.log
+*.asc
+*.blf
+
+# Local environment files and secrets
+.env
+.env.*
+!.env.example
+
+# Generated executable files
+/vehicle_ecu
+/dashboard_ecu
+
+# Old local README backup
+/README_old_backup.md
+
+# Keep only the four final evidence images in Git
+/screenshots/*
+!/screenshots/combined/
+/screenshots/combined/*
+!/screenshots/combined/udp_analysis.png
+!/screenshots/combined/tcp_analysis.png
+!/screenshots/combined/error_analysis.png
+!/screenshots/combined/wireshark_analysis.png
