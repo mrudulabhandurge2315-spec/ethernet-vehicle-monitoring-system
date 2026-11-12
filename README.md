@@ -23,6 +23,8 @@ The system consists of two main components:
 - **Vehicle ECU (Sender):** Generates simulated vehicle data and transmits it using TCP or UDP.
 - **Dashboard ECU (Receiver):** Receives the vehicle data and displays it on the terminal.
 
+<img width="1177" height="645" alt="image" src="https://github.com/user-attachments/assets/532ecfa9-172b-4a7d-919b-da8ae4ddd620" />
+
 Communication configuration:
 
 - IP Address: 127.0.0.1
