@@ -129,7 +129,3 @@ The following scenarios were tested:
 Both TCP and UDP communication modes have been implemented, compiled and tested successfully using Ubuntu 22.04 under WSL2.
 
 The current demonstration uses the localhost address `127.0.0.1`. It simulates communication between two automotive ECUs without requiring physical vehicle hardware.
-
-## License
-
-MIT License.
